@@ -2,7 +2,7 @@
 
 ## 1 - Membros do grupo:
 - Giovanni Russo Paschoal
-- João ???
+- João Victor Evangelista Cruz
 - Luiza Sodre Salgado
 - Victor Gabriel Moura Oliveira
 
