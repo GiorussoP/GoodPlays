@@ -7,7 +7,7 @@
 - Victor Gabriel Moura Oliveira
 
 ## 2 - Explicação do sistema:
-  O sistema será (explicação...)
+  O sistema será uma biblioteca de jogos digitais, na qual será podemos simular ações como publicação de jogos, pesquisa de jogos disponíveis, instalação e desinstalação dos jogos, criar avaliações de jogos, entre outros.
 
 ## 3 - Possíveis tecnologias utilizadas:
-  (...)
+  Faremos o projeto usando a linguagem Python e o Sqlite para banco de dados.
