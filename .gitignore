@@ -1,0 +1,15 @@
+*.db
+.coverage
+coverage.xml
+
+# Python
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ambientes Virtuais
+.venv/
+venv/
+ENV/
