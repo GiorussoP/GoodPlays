@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional
 
 class UserCreate(BaseModel):
     username: str
@@ -9,5 +10,21 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    developer: Optional[str] = None
+    genre: Optional[str] = None
+    release_year: Optional[int] = None
+
+class GameCreate(GameBase):
+    pass # Herda tudo de GameBase, sem nada a mais por enquanto
+
+class GameResponse(GameBase):
+    id: int
 
     model_config = ConfigDict(from_attributes=True)
