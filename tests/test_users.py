@@ -37,3 +37,20 @@ def test_read_user_not_found(client):
     response = client.get("/users/9999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Usuário não encontrado"
+
+def test_read_user_success(client):
+    response = client.post(
+        "/users/", 
+        json={"username": "victor", "email": "victor@teste.com", "password": "secure123"}
+    )
+    assert response.status_code == 201
+    created_user = response.json()
+    user_id = created_user["id"]
+
+    response = client.get(f"/users/{user_id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == user_id
+    assert data["username"] == "victor"
+    assert data["email"] == "victor@teste.com"
