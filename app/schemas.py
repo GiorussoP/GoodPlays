@@ -48,10 +48,19 @@ class ProgressResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class ReviewCreate(BaseModel):
     user_id: int
     game_id: int
     rating: int  # 1-5 scale
+    
+    @field_validator('rating')
+    @classmethod
+    def rating_must_be_between_1_and_5(cls, v):
+        if v < 1 or v > 5:
+            raise ValueError('Rating must be between 1 and 5')
+        return v
+    
     comment: Optional[str] = None
 
 class ReviewUpdate(BaseModel):
