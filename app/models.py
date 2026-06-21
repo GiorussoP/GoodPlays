@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from app.database import Base
 
 class User(Base):
@@ -19,3 +19,14 @@ class Game(Base):
     developer = Column(String, nullable=True)
     genre = Column(String, nullable=True)
     release_year = Column(Integer, nullable=True)
+
+
+class Progress(Base):
+    __tablename__ = "progress"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
+    progress_percentage = Column(Integer, nullable=False)
+    last_played_at = Column(String, nullable=True)
+
