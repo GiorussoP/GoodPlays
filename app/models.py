@@ -30,3 +30,13 @@ class Progress(Base):
     progress_percentage = Column(Integer, nullable=False)
     last_played_at = Column(String, nullable=True)
 
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
+    rating = Column(Integer, nullable=False)  # 1-5 scale
+    comment = Column(String, nullable=True)
+    created_at = Column(String, nullable=True)
