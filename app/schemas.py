@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from typing import Optional
 
 class UserCreate(BaseModel):
@@ -66,6 +66,14 @@ class ReviewCreate(BaseModel):
 class ReviewUpdate(BaseModel):
     rating: Optional[int] = None
     comment: Optional[str] = None
+
+    @field_validator('rating')
+    @classmethod
+    def rating_must_be_between_1_and_5(cls, v):
+        # Como é opcional, só valida se o valor for enviado
+        if v is not None and (v < 1 or v > 5):
+            raise ValueError('Rating must be between 1 and 5')
+        return v
 
 class ReviewResponse(ReviewCreate):
     id: int
