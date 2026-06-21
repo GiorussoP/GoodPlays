@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import engine, Base
-from app.routers import users, games
+from app.routers import users, games, progress
 
 # Cria as tabelas no banco SQLite automaticamente ao iniciar
 Base.metadata.create_all(bind=engine)
@@ -10,6 +10,7 @@ app = FastAPI(title="GoodPlays API")
 # Inclui as rotas do módulo de usuários
 app.include_router(users.router)
 app.include_router(games.router)
+app.include_router(progress.router)  # Esta linha estava faltando!
 
 @app.get("/")
 def read_root():

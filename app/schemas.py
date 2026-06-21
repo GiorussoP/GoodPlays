@@ -39,6 +39,11 @@ class ProgressUpdate(BaseModel):
     progress_percentage: Optional[int] = None
     last_played_at: Optional[str] = None
 
-class ProgressResponse(ProgressCreate):
+class ProgressResponse(BaseModel):
     id: int
-    created_at: Optional[str] = None
+    user_id: int
+    game_id: int
+    progress_percentage: int
+    last_played_at: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
