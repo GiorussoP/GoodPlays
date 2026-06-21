@@ -47,3 +47,19 @@ class ProgressResponse(BaseModel):
     last_played_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class ReviewCreate(BaseModel):
+    user_id: int
+    game_id: int
+    rating: int  # 1-5 scale
+    comment: Optional[str] = None
+
+class ReviewUpdate(BaseModel):
+    rating: Optional[int] = None
+    comment: Optional[str] = None
+
+class ReviewResponse(ReviewCreate):
+    id: int
+    created_at: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
