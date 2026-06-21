@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Game
+from app.models import Game, User
 from app.schemas import GameCreate, GameResponse
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/games", tags=["Games"])
 
 @router.post("/", response_model=GameResponse, status_code=status.HTTP_201_CREATED)
-def create_game(game: GameCreate, db: Session = Depends(get_db)):
+def create_game(game: GameCreate, 
+                db: Session = Depends(get_db, ), 
+                current_user: User = Depends(get_current_user)
+                ):
+    
     # Verifica se o jogo já existe pelo título
     db_game = db.query(Game).filter(Game.title == game.title).first()
     if db_game:
@@ -25,6 +30,8 @@ def create_game(game: GameCreate, db: Session = Depends(get_db)):
     db.add(new_game)
     db.commit()
     db.refresh(new_game)
+
+    print(f"O usuário {current_user.username} acabou de cadastrar o jogo {new_game.title}!")
     
     return new_game
 

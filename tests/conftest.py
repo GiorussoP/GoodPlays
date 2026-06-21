@@ -45,3 +45,25 @@ def client(db_session):
         yield c
     app.dependency_overrides.clear()
 
+@pytest.fixture(scope="function")
+def auth_client(client):
+    """Gera um usuário de teste, faz login e retorna um cliente autenticado."""
+    # 1. Cria o usuário no banco de dados de teste através do client
+    client.post(
+        "/users/", 
+        json={"username": "tester", "email": "tester@teste.com", "password": "123"}
+    )
+    
+    # 2. Faz o login para gerar o Token JWT
+    # Nota: Como o seu login usa OAuth2PasswordRequestForm, passamos os dados em 'data' (form), não em 'json'
+    response = client.post(
+        "/login", 
+        data={"username": "tester", "password": "123"}
+    )
+    token = response.json()["access_token"]
+    
+    # 3. Injeta o cabeçalho de autorização permanentemente neste cliente
+    client.headers.update({"Authorization": f"Bearer {token}"})
+    
+    # 4. Devolve o cliente pronto e logado para o teste usar
+    yield client

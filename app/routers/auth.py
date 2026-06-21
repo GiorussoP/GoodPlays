@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
@@ -55,3 +55,37 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     
     # O FastAPI exige que o retorno tenha exatamente este formato
     return {"access_token": access_token, "token_type": "bearer"}
+
+# O FastAPI precisa saber qual é a URL que gera o token para avisar o Swagger
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
+
+def get_current_user(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Esta é a fechadura. Ela recebe o token, decodifica e devolve o usuário logado."""
+    
+    # O erro padrão caso o token seja inválido, falso ou expirado
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Não foi possível validar as credenciais. Faça login novamente.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if token is None:
+        raise credentials_exception
+    
+    try:
+        # Tenta abrir o token usando a sua chave secreta
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+            
+    except jwt.InvalidTokenError:
+        # Se o token estiver vencido ou adulterado, cai aqui e barra o usuário
+        raise credentials_exception
+        
+    # Busca o usuário no banco para garantir que ele ainda existe (não foi deletado)
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise credentials_exception
+        
+    return user
