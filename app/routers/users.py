@@ -3,12 +3,10 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import UserCreate, UserResponse
+from auth import get_password_hash
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-# Função auxiliar simulando um hash de senha seguro
-def get_password_hash(password: str) -> str:
-    return password + "notsosecret"
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
