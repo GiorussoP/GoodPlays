@@ -24,6 +24,18 @@ def test_create_review_success(auth_client):
     assert data["comment"] == "Excelente jogo!"
     assert "id" in data
 
+def test_create_review_without_login(client):
+    review_data = {
+        "user_id": 1,
+        "game_id": 1,
+        "rating": 5,
+        "comment": "Excelente jogo!"
+    }
+    
+    response = client.post("/reviews/", json=review_data)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
+
 def test_create_review_invalid_rating(auth_client):
     review_data = {
         "user_id": 1,
@@ -63,6 +75,12 @@ def test_get_review_not_found(auth_client):
     response = auth_client.get("/reviews/9999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Review not found"
+
+def test_create_review_without_login(client):
+    
+    response = client.get("/reviews/9999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
 
 def test_update_review_success(auth_client):
     # Criar usuário, jogo e review
@@ -157,6 +175,11 @@ def test_get_game_reviews_empty(auth_client):
     assert response.status_code == 200
     assert response.json() == []  # Espera uma lista vazia
 
+def test_get_game_reviews_without_login(client):
+    response = client.get("/reviews/game/9999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
+
 def test_update_review_invalid_rating(auth_client):
     # Criar usuário, jogo e review
     user_response = auth_client.post("/users/", json={"username": "testuser6", "email": "test6@test.com", "password": "pass123"})
@@ -189,8 +212,12 @@ def test_delete_review_not_found(auth_client):
     response = auth_client.delete("/reviews/9999")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Review not found" 
+    assert response.json()["detail"] == "Review not found"
 
+def test_delete_review_without_login(client):
+    response = client.delete("/reviews/9999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
 
 def test_update_review_not_found(auth_client):
     # Dados para a tentativa de atualização
@@ -205,3 +232,14 @@ def test_update_review_not_found(auth_client):
     # Valida se a API respondeu com 404 e a mensagem correta
     assert response.status_code == 404
     assert response.json()["detail"] == "Review not found"
+
+def test_update_review_without_login(client):
+    
+    update_data = {
+        "rating": 5, 
+        "comment": "Tentando atualizar uma review que não existe"
+    }
+    
+    response = client.put("/reviews/9999", json=update_data)  
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."

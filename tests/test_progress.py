@@ -50,6 +50,20 @@ def test_create_progress_duplicate(auth_client):
     assert response.status_code == 400
     assert response.json()["detail"] == "Progress already exists for this user and game."
 
+def test_create_progress_without_login(client):
+
+    progress_data = {
+        "user_id": 1,
+        "game_id": 1,
+        "progress_percentage": 50,
+        "last_played_at": "2023-01-01T10:00:00"
+    }
+
+    response = client.post("/progress/", json=progress_data)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
+    
+
 def test_get_progress_success(auth_client):
     # Criar usuário, jogo e progresso
     user_response = auth_client.post("/users/", json={"username": "progressuser2", "email": "progress2@test.com", "password": "pass123"})
@@ -77,6 +91,12 @@ def test_get_progress_not_found(auth_client):
     response = auth_client.get("/progress/by-user-and-game/999/999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Progress not found."
+
+def test_get_progress_without_login(client):
+    # Tentar obter progresso sem login
+    response = client.get("/progress/by-user-and-game/999/999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
 
 def test_get_user_progress_success(auth_client):
     # Criar usuário e jogos
@@ -115,6 +135,12 @@ def test_get_user_progress_not_found(auth_client):
     assert response.status_code == 404
     assert response.json()["detail"] == "No progress found for this user."
 
+def test_get_user_progress_without_login(client):
+    # Tentar obter progresso sem login
+    response = client.get("/progress/by-user/999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
+
 def test_get_game_progress_success(auth_client):
     # Criar usuários e jogo
     user1_response = auth_client.post("/users/", json={"username": "user1progress", "email": "user1progress@test.com", "password": "pass123"})
@@ -151,6 +177,12 @@ def test_get_game_progress_not_found(auth_client):
     response = auth_client.get("/progress/by-game/999")
     assert response.status_code == 404
     assert response.json()["detail"] == "No progress found for this game."
+
+def test_get_game_progress_without_login(client):
+    # Tentar obter progressos de um jogo sem login
+    response = client.get("/progress/by-game/999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
 
 def test_update_progress_success(auth_client):
     # Criar usuário, jogo e progresso
@@ -191,6 +223,16 @@ def test_update_progress_not_found(auth_client):
     assert response.status_code == 404
     assert response.json()["detail"] == "Progress entry not found."
 
+def test_update_progress_without_login(client):
+    # Tentar atualizar um progresso sem login
+    update_data = {
+        "progress_percentage": 80
+    }
+    
+    response = client.put("/progress/999", json=update_data)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
+
 def test_delete_progress_success(auth_client):
     # Criar usuário, jogo e progresso
     user_response = auth_client.post("/users/", json={"username": "progressuser4", "email": "progress4@test.com", "password": "pass123"})
@@ -219,3 +261,10 @@ def test_delete_progress_not_found(auth_client):
     response = auth_client.delete("/progress/999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Progress entry not found."
+
+def test_delete_progress_without_login(client):
+    # Tentar deletar um progresso sem login
+    
+    response = client.delete("/progress/999")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."

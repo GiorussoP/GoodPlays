@@ -2,15 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app import schemas, database
-from app.models import Progress, Review
+from app.models import Progress, Review, User
 from app.database import get_db
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/progress", tags=["Progress"])  
 
 @router.post("/")
 async def create_progress(
     progress: schemas.ProgressCreate, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Create a new progress entry for a user and game."""
     existing_progress = db.query(Progress).filter(
@@ -43,7 +45,8 @@ async def create_progress(
 async def get_progress(
     user_id: int, 
     game_id: int, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get progress for a specific user and game."""
     progress = db.query(Progress).filter(
@@ -62,7 +65,8 @@ async def get_progress(
 @router.get("/by-user/{user_id}", response_model=List[schemas.ProgressResponse])
 async def get_user_progress(
     user_id: int, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get all progress entries for a specific user."""
     progress = db.query(Progress).filter(Progress.user_id == user_id).all()
@@ -78,7 +82,8 @@ async def get_user_progress(
 @router.get("/by-game/{game_id}", response_model=List[schemas.ProgressResponse])
 async def get_game_progress(
     game_id: int, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get all progress entries for a specific game."""
     progress = db.query(Progress).filter(Progress.game_id == game_id).all()
@@ -95,7 +100,8 @@ async def get_game_progress(
 async def update_progress(
     progress_id: int,
     progress: schemas.ProgressUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update an existing progress entry."""
     existing_progress = db.query(Progress).filter(Progress.id == progress_id).first()
@@ -120,7 +126,8 @@ async def update_progress(
 @router.delete("/{progress_id}")
 async def delete_progress(
     progress_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Delete a progress entry."""
     progress = db.query(Progress).filter(Progress.id == progress_id).first()
