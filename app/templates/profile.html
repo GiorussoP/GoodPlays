@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - GoodPlays{% endblock %}
+
+{% block content %}
+<div class="row mb-5">
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-circle"></i> Profile Info</h5>
+            </div>
+            <div class="card-body text-center">
+                <div style="font-size: 4rem; color: #007bff; margin-bottom: 1rem;">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h4 id="username">Loading...</h4>
+                <p id="email" class="text-muted">Loading...</p>
+                <hr>
+                <p class="text-muted small">Member since <span id="memberSince">-</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <!-- Stats Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 id="gamesInProgress" class="text-primary">0</h3>
+                        <p class="text-muted mb-0">Games in Progress</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 id="reviewsCount" class="text-info">0</h3>
+                        <p class="text-muted mb-0">Reviews Written</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gaming Progress Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Your Gaming Progress</h5>
+            </div>
+            <div class="card-body">
+                <div id="progressList">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading progress...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Your Reviews</h5>
+            </div>
+            <div class="card-body">
+                <div id="reviewsList">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> Loading reviews...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentUserId = null;
+let allProgress = [];
+let allReviews = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    // Get user ID from token
+    currentUserId = await getCurrentUserIdFromToken(token);
+    if (!currentUserId) {
+        alert('Could not verify your session');
+        window.location.href = '/login';
+        return;
+    }
+    
+    await loadUserProfile();
+    await loadUserProgress();
+    await loadUserReviews();
+});
+
+async function getCurrentUserIdFromToken(token) {
+    try {
+        // Request current user from backend
+        const resp = await fetch('/users/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        return data.id;
+    } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
+    }
+}
+
+async function loadUserProfile() {
+    try {
+        const token = localStorage.getItem('access_token');
+        
+        // Mock user data - in production, create a /me endpoint
+        document.getElementById('username').textContent = 'User ' + (currentUserId || 'Loading...');
+        document.getElementById('email').textContent = 'user@example.com';
+        document.getElementById('memberSince').textContent = 'Jan 2024';
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+async function loadUserProgress() {
+    try {
+        const token = localStorage.getItem('access_token');
+        
+        const response = await fetch(`/progress/by-user/${currentUserId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load progress');
+        
+        allProgress = await response.json();
+        displayProgress();
+    } catch (error) {
+        console.error('Error loading progress:', error);
+        document.getElementById('progressList').innerHTML = 
+            '<p class="text-muted">No games in progress yet. <a href="/games">Start a game now!</a></p>';
+    }
+}
+
+async function loadUserReviews() {
+    try {
+        // We need to get all reviews and filter by current user
+        // For now, this would require a /my-reviews endpoint
+        document.getElementById('reviewsCount').textContent = '0';
+        document.getElementById('reviewsList').innerHTML = 
+            '<p class="text-muted">No reviews yet. <a href="/games">Write your first review!</a></p>';
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+    }
+}
+
+function displayProgress() {
+    const container = document.getElementById('progressList');
+    document.getElementById('gamesInProgress').textContent = allProgress.length;
+    
+    if (allProgress.length === 0) {
+        container.innerHTML = '<p class="text-muted">No games in progress yet. <a href="/games">Start tracking a game!</a></p>';
+        return;
+    }
+    
+    container.innerHTML = allProgress.map(progress => {
+        const percentage = progress.progress_percentage || 0;
+        return `
+            <div class="mb-3 pb-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Game ID: ${progress.game_id}</strong>
+                    <span class="badge bg-primary">${percentage}%</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                </div>
+                <small class="text-muted">Last played: ${progress.last_played_at || 'Never'}</small>
+            </div>
+        `;
+    }).join('');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

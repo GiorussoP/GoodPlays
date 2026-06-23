@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}Game Details - GoodPlays{% endblock %}
+
+{% block content %}
+<div id="gameDetailContent">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div id="gameHeader" class="mb-4">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <!-- Progress Section -->
+            <div class="card mb-4" id="progressSection">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Your Progress</h5>
+                </div>
+                <div class="card-body" id="progressContent">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Reviews</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary mb-3" id="addReviewBtn" style="display: none;">
+                        <i class="fas fa-plus"></i> Write a Review
+                    </button>
+                    <div id="reviewsContainer">
+                        <div class="text-center text-muted">Loading reviews...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Game Info</h5>
+                </div>
+                <div class="card-body" id="gameInfoSidebar">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Review Modal -->
+<div class="modal fade" id="addReviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Write a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addReviewForm">
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Rating (1-5 stars)</label>
+                        <div class="rating-input">
+                            <div id="starRating" class="mb-2">
+                                <i class="fas fa-star star" data-value="1"></i>
+                                <i class="fas fa-star star" data-value="2"></i>
+                                <i class="fas fa-star star" data-value="3"></i>
+                                <i class="fas fa-star star" data-value="4"></i>
+                                <i class="fas fa-star star" data-value="5"></i>
+                            </div>
+                            <input type="hidden" id="ratingValue" name="rating" value="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">Comment (optional)</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="4" placeholder="Share your thoughts..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitReviewBtn">Post Review</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="progressForm">
+                    <div class="mb-3">
+                        <label for="progressPercentage" class="form-label">Completion (%)</label>
+                        <input type="range" class="form-range" id="progressPercentage" min="0" max="100" value="0">
+                        <div class="text-center mt-2">
+                            <span id="progressPercentageDisplay">0</span>%
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lastPlayed" class="form-label">Last Played</label>
+                        <input type="datetime-local" class="form-control" id="lastPlayed">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitProgressBtn">Save Progress</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentGame = null;
+let currentProgress = null;
+let currentUserId = null;
+let reviewModalInstance = null;
+let progressModalInstance = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Extract game ID from URL path
+    const pathParts = window.location.pathname.split('/');
+    const gameId = pathParts[pathParts.length - 1];
+    
+    if (!gameId || isNaN(gameId)) {
+        document.getElementById('gameDetailContent').innerHTML = 
+            '<div class="alert alert-danger">Game not found</div>';
+        return;
+    }
+    
+    // Get current user ID first so progress can be loaded
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        currentUserId = await getCurrentUserIdFromToken(token);
+        const reviewModalEl = document.getElementById('addReviewModal');
+        const progressModalEl = document.getElementById('progressModal');
+        if (reviewModalEl) reviewModalInstance = new bootstrap.Modal(reviewModalEl);
+        if (progressModalEl) progressModalInstance = new bootstrap.Modal(progressModalEl);
+    }
+
+    checkAuthState();
+    await loadGameDetail(gameId);
+    await loadReviews(gameId);
+});
+
+async function getCurrentUserIdFromToken(token) {
+    try {
+        // Try to get current user from backend
+        const resp = await fetch('/users/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        return data.id;
+    } catch (error) {
+        console.error('Error getting user ID:', error);
+        return null;
+    }
+}
+
+async function loadGameDetail(gameId) {
+    try {
+        const response = await fetch(`/games/${gameId}`);
+        if (!response.ok) throw new Error('Game not found');
+        
+        currentGame = await response.json();
+        displayGameDetail();
+        
+        // Load user progress if logged in
+        const token = localStorage.getItem('access_token');
+        if (token && currentUserId) {
+            await loadUserProgress(currentUserId, gameId);
+        }
+    } catch (error) {
+        console.error('Error loading game:', error);
+        document.getElementById('gameDetailContent').innerHTML = 
+            '<div class="alert alert-danger">Failed to load game details</div>';
+    }
+}
+
+function displayGameDetail() {
+    const header = document.getElementById('gameHeader');
+    header.innerHTML = `
+        <h1>${escapeHtml(currentGame.title)}</h1>
+        <p class="text-muted"><em>by ${escapeHtml(currentGame.developer || 'Unknown Developer')}</em></p>
+    `;
+    
+    const sidebar = document.getElementById('gameInfoSidebar');
+    sidebar.innerHTML = `
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Genre:</dt>
+            <dd class="col-sm-8">${escapeHtml(currentGame.genre || 'N/A')}</dd>
+            
+            <dt class="col-sm-4">Release:</dt>
+            <dd class="col-sm-8">${currentGame.release_year || 'N/A'}</dd>
+            
+            <dt class="col-sm-4">Developer:</dt>
+            <dd class="col-sm-8">${escapeHtml(currentGame.developer || 'Unknown')}</dd>
+        </dl>
+        <hr>
+        <h6>Description</h6>
+        <p class="text-muted">${escapeHtml(currentGame.description || 'No description available')}</p>
+    `;
+}
+
+async function loadReviews(gameId) {
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            document.getElementById('reviewsContainer').innerHTML = 
+                '<p class="text-muted">Please log in to see reviews</p>';
+            return;
+        }
+        
+        const response = await fetch(`/reviews/game/${gameId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        let reviews = [];
+        if (response.ok) {
+            reviews = await response.json();
+        }
+        
+        displayReviews(reviews);
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+    }
+}
+
+function displayReviews(reviews) {
+    const container = document.getElementById('reviewsContainer');
+    
+    if (reviews.length === 0) {
+        container.innerHTML = '<p class="text-muted">No reviews yet. Be the first!</p>';
+        return;
+    }
+    
+    container.innerHTML = reviews.map(review => `
+        <div class="review-item mb-3 pb-3 border-bottom">
+            <div class="d-flex justify-content-between">
+                <strong>User ${review.user_id}</strong>
+                <div class="stars">
+                    ${'<i class="fas fa-star text-warning"></i>'.repeat(review.rating)}
+                    ${'<i class="fas fa-star-o text-muted"></i>'.repeat(5 - review.rating)}
+                </div>
+            </div>
+            <p class="mt-2 mb-0 text-muted">${escapeHtml(review.comment || 'No comment')}</p>
+            <small class="text-muted">${review.created_at || 'Recently'}</small>
+        </div>
+    `).join('');
+}
+
+async function loadUserProgress(userId, gameId) {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`/progress/by-user-and-game/${userId}/${gameId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            currentProgress = await response.json();
+            displayProgress();
+        } else {
+            displayNoProgress();
+        }
+    } catch (error) {
+        console.log('No progress found for this game');
+        displayNoProgress();
+    }
+}
+
+function displayProgress() {
+    const content = document.getElementById('progressContent');
+    content.innerHTML = `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+                <strong>Completion:</strong>
+                <span>${currentProgress.progress_percentage}%</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" style="width: ${currentProgress.progress_percentage}%"></div>
+            </div>
+        </div>
+        <p class="mb-0 text-muted">
+            Last played: ${currentProgress.last_played_at || 'Never'}
+        </p>
+        <button class="btn btn-sm btn-warning mt-3" onclick="editProgress()">
+            <i class="fas fa-edit"></i> Update Progress
+        </button>
+    `;
+}
+
+function displayNoProgress() {
+    const content = document.getElementById('progressContent');
+    content.innerHTML = `
+        <p class="text-muted mb-0">You haven't started playing this game yet.</p>
+        <button class="btn btn-sm btn-primary mt-3" onclick="startProgress()">
+            <i class="fas fa-play"></i> Start Playing
+        </button>
+    `;
+}
+
+function checkAuthState() {
+    const token = localStorage.getItem('access_token');
+    document.getElementById('addReviewBtn').style.display = token ? 'block' : 'none';
+    
+    if (token) {
+        document.getElementById('addReviewBtn').addEventListener('click', () => {
+            reviewModalInstance.show();
+        });
+        
+        // Setup star rating
+        document.querySelectorAll('.rating-input .star').forEach(star => {
+            star.addEventListener('click', () => {
+                const value = star.dataset.value;
+                document.getElementById('ratingValue').value = value;
+                updateStars(value);
+            });
+        });
+        
+        document.getElementById('submitReviewBtn').addEventListener('click', submitReview);
+        
+        // Setup progress slider
+        document.getElementById('progressPercentage').addEventListener('input', (e) => {
+            document.getElementById('progressPercentageDisplay').textContent = e.target.value;
+        });
+        
+        document.getElementById('submitProgressBtn').addEventListener('click', submitProgress);
+    }
+}
+
+function updateStars(rating) {
+    document.querySelectorAll('.rating-input .star').forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+}
+
+function editProgress() {
+    const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+    document.getElementById('progressPercentage').value = currentProgress.progress_percentage;
+    document.getElementById('progressPercentageDisplay').textContent = currentProgress.progress_percentage;
+    modal.show();
+}
+
+function startProgress() {
+    const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+    document.getElementById('progressPercentage').value = 0;
+    document.getElementById('progressPercentageDisplay').textContent = 0;
+    modal.show();
+}
+
+async function submitProgress() {
+    const token = localStorage.getItem('access_token');
+    if (!token || !currentUserId) {
+        alert('Please log in first');
+        return;
+    }
+    
+    const percentage = parseInt(document.getElementById('progressPercentage').value);
+    const lastPlayed = document.getElementById('lastPlayed').value;
+    
+    try {
+        if (currentProgress) {
+            // Update existing (use progress ID)
+            const response = await fetch(`/progress/${currentProgress.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    progress_percentage: percentage,
+                    last_played_at: lastPlayed
+                })
+            });
+        } else {
+            // Create new
+            const response = await fetch('/progress/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    user_id: currentUserId,
+                    game_id: currentGame.id,
+                    progress_percentage: percentage,
+                    last_played_at: lastPlayed
+                })
+            });
+        }
+        
+        if (progressModalInstance) {
+            progressModalInstance.hide();
+        } else {
+            const fallbackModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+            if (fallbackModal) fallbackModal.hide();
+        }
+        removeBackdrop();
+        await loadUserProgress(currentUserId, currentGame.id);
+        alert('Progress saved!');
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function submitReview() {
+    const token = localStorage.getItem('access_token');
+    if (!token || !currentUserId) {
+        alert('Please log in first');
+        return;
+    }
+    
+    const rating = parseInt(document.getElementById('ratingValue').value);
+    const comment = document.getElementById('comment').value;
+    
+    if (rating === 0) {
+        alert('Please select a rating');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/reviews/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                user_id: currentUserId,
+                game_id: currentGame.id,
+                rating: rating,
+                comment: comment
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to post review');
+        }
+        
+        if (reviewModalInstance) {
+            reviewModalInstance.hide();
+        } else {
+            const fallbackModal = bootstrap.Modal.getInstance(document.getElementById('addReviewModal'));
+            if (fallbackModal) fallbackModal.hide();
+        }
+        removeBackdrop();
+        document.getElementById('addReviewForm').reset();
+        document.getElementById('ratingValue').value = 0;
+        await loadReviews(currentGame.id);
+        alert('Review posted!');
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function removeBackdrop() {
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+}
+</script>
+
+<style>
+.star {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #ddd;
+    transition: color 0.2s;
+}
+
+.star:hover,
+.star.active {
+    color: #ffc107;
+}
+
+.review-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+</style>
+{% endblock %}

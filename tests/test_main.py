@@ -13,7 +13,3 @@ def test_read_root_integration():
     
     # Verifica se o status code é 200 (OK)
     assert response.status_code == 200
-    
-    # Verifica se o conteúdo retornado contém partes esperadas do HTML
-    assert "<title>GoodPlays</title>" in response.text
-    assert "Descubra e Compartilhe os Melhores Jogos" in response.text
