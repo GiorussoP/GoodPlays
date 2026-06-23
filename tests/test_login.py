@@ -52,3 +52,65 @@ def test_login_nonexistent_user(client):
     # 2. Validação: Checa se foi barrado de forma idêntica (boa prática de segurança)
     assert response.status_code == 401
     assert response.json()["detail"] == "Usuário ou senha incorretos"
+
+
+def test_get_current_user_no_token(client):
+    # Tenta acessar um endpoint protegido sem token
+    response = client.post("/games/", json={"title": "Sem Token"})
+    assert response.status_code == 401
+    assert "Não foi possível validar" in response.json()["detail"]
+
+def test_get_current_user_invalid_token(client):
+    # Tenta acessar com um token malformado/inválido
+    response = client.post(
+        "/games/", 
+        json={"title": "Token Invalido"},
+        headers={"Authorization": "Bearer token_falso_123"}
+    )
+    assert response.status_code == 401
+
+def test_get_current_user_no_token(client):
+    # Tenta acessar um endpoint protegido sem cabeçalho Authorization
+    # (A rota /progress/me exige autenticação)
+    response = client.get("/progress/me")
+    
+    assert response.status_code == 401
+    assert "Não foi possível validar as credenciais" in response.json()["detail"]
+
+def test_get_current_user_invalid_token(client):
+    # Tenta acessar com um token malformado
+    response = client.get(
+        "/progress/me", 
+        headers={"Authorization": "Bearer token_invalido_de_teste"}
+    )
+
+    assert response.status_code == 401
+    assert "Não foi possível validar as credenciais" in response.json()["detail"]
+
+def test_get_current_user_no_token(client):
+    """
+    Testa o caso onde não existe header de autorização (token is None).
+    Usamos um endpoint protegido (ex: POST /games/) sem passar o token.
+    """
+    response = client.post("/games/", json={
+        "title": "Teste sem Token", 
+        "description": "Desc", 
+        "developer": "Dev"
+    })
+    
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."
+
+def test_get_current_user_invalid_token(client):
+    """
+    Testa o caso onde o token é enviado, mas é inválido/corrompido.
+    O jwt.decode falhará, caindo no except jwt.InvalidTokenError.
+    """
+    response = client.post(
+        "/games/", 
+        json={"title": "Teste Token Invalido", "description": "Desc", "developer": "Dev"},
+        headers={"Authorization": "Bearer token-malformado-aqui"}
+    )
+    
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Não foi possível validar as credenciais. Faça login novamente."

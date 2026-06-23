@@ -80,3 +80,15 @@ def test_read_game_not_found(client):
     
     assert response.status_code == 404
     assert response.json()["detail"] == "Jogo não encontrado"
+
+def test_search_games(auth_client):
+    # 1. Arrange: Cria um jogo
+    auth_client.post("/games/", json={"title": "The Witcher 3"})
+    
+    # 2. Act: Busca pelo jogo
+    response = auth_client.get("/games/search/?q=Witcher")
+    
+    # 3. Assert
+    assert response.status_code == 200
+    assert len(response.json()) > 0
+    assert response.json()[0]["title"] == "The Witcher 3"

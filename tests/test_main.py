@@ -14,6 +14,22 @@ def test_read_root_integration():
     # Verifica se o status code é 200 (OK)
     assert response.status_code == 200
     
-    # Verifica se o conteúdo retornado contém partes esperadas do HTML
+    # Verifica se o conteúdo retornado contém partes esperadas do HTML atualizado
     assert "<title>GoodPlays</title>" in response.text
-    assert "Descubra e Compartilhe os Melhores Jogos" in response.text
+    assert "Bem-vindo ao GoodPlays" in response.text
+
+def test_login_page_loads(client):
+    response = client.get("/login")
+    assert response.status_code == 200
+
+def test_register_page_loads(client):
+    response = client.get("/register")
+    assert response.status_code == 200
+
+def test_games_page_loads(client):
+    response = client.get("/games")
+    assert response.status_code == 200
+
+def test_my_progress_page(client):
+    response = client.get("/my-progress")
+    assert response.status_code == 200
