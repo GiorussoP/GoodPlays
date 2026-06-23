@@ -125,6 +125,7 @@
 let currentGame = null;
 let currentProgress = null;
 let currentUserId = null;
+let currentUsername = null; // Nova variável para armazenar o nome do usuário
 let reviewModalInstance = null;
 let progressModalInstance = null;
 
@@ -139,10 +140,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // Get current user ID first so progress can be loaded
+    // Get current user ID and username first so progress can be loaded
     const token = localStorage.getItem('access_token');
     if (token) {
         currentUserId = await getCurrentUserIdFromToken(token);
+        currentUsername = await getCurrentUsernameFromToken(token); // Nova chamada para o username
         const reviewModalEl = document.getElementById('addReviewModal');
         const progressModalEl = document.getElementById('progressModal');
         if (reviewModalEl) reviewModalInstance = new bootstrap.Modal(reviewModalEl);
@@ -165,6 +167,21 @@ async function getCurrentUserIdFromToken(token) {
         return data.id;
     } catch (error) {
         console.error('Error getting user ID:', error);
+        return null;
+    }
+}
+
+async function getCurrentUsernameFromToken(token) {
+    try {
+        // Try to get current user from backend
+        const resp = await fetch('/users/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        return data.username; // Retorna o username
+    } catch (error) {
+        console.error('Error getting username:', error);
         return null;
     }
 }
@@ -251,7 +268,7 @@ function displayReviews(reviews) {
     container.innerHTML = reviews.map(review => `
         <div class="review-item mb-3 pb-3 border-bottom">
             <div class="d-flex justify-content-between">
-                <strong>User ${review.user_id}</strong>
+                <strong>${review.user?.username || 'User ' + review.user_id}</strong>
                 <div class="stars">
                     ${'<i class="fas fa-star text-warning"></i>'.repeat(review.rating)}
                     ${'<i class="fas fa-star-o text-muted"></i>'.repeat(5 - review.rating)}

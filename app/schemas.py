@@ -75,8 +75,16 @@ class ReviewUpdate(BaseModel):
             raise ValueError('Rating must be between 1 and 5')
         return v
 
+class UserInReview(BaseModel):
+    id: int
+    username: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReviewResponse(ReviewCreate):
     id: int
     created_at: Optional[str] = None
+    user: Optional[UserInReview] = None
 
     model_config = ConfigDict(from_attributes=True)

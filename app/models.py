@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 class User(Base):
@@ -8,6 +9,8 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+
+    reviews = relationship("Review", back_populates="user")
 
 
 class Game(Base):
@@ -19,6 +22,8 @@ class Game(Base):
     developer = Column(String, nullable=True)
     genre = Column(String, nullable=True)
     release_year = Column(Integer, nullable=True)
+
+    reviews = relationship("Review", back_populates="game")
 
 
 class Progress(Base):
@@ -40,3 +45,7 @@ class Review(Base):
     rating = Column(Integer, nullable=False)  # 1-5 scale
     comment = Column(String, nullable=True)
     created_at = Column(String, nullable=True)
+    
+    user = relationship("User", back_populates="reviews")
+   
+    game = relationship("Game", back_populates="reviews")

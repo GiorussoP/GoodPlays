@@ -87,45 +87,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // Get user ID from token
-    currentUserId = await getCurrentUserIdFromToken(token);
-    if (!currentUserId) {
+    // Get current user data (id + username + email) in a single request
+    const currentUser = await getCurrentUser(token);
+    if (!currentUser) {
         alert('Could not verify your session');
         window.location.href = '/login';
         return;
     }
-    
-    await loadUserProfile();
+    currentUserId = currentUser.id;
+
+    loadUserProfile(currentUser);
     await loadUserProgress();
     await loadUserReviews();
 });
 
-async function getCurrentUserIdFromToken(token) {
+async function getCurrentUser(token) {
     try {
-        // Request current user from backend
         const resp = await fetch('/users/me', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!resp.ok) return null;
-        const data = await resp.json();
-        return data.id;
+        return await resp.json();
     } catch (error) {
-        console.error('Error decoding token:', error);
+        console.error('Error fetching current user:', error);
         return null;
     }
 }
 
-async function loadUserProfile() {
-    try {
-        const token = localStorage.getItem('access_token');
-        
-        // Mock user data - in production, create a /me endpoint
-        document.getElementById('username').textContent = 'User ' + (currentUserId || 'Loading...');
-        document.getElementById('email').textContent = 'user@example.com';
-        document.getElementById('memberSince').textContent = 'Jan 2024';
-    } catch (error) {
-        console.error('Error loading profile:', error);
-    }
+function loadUserProfile(user) {
+    document.getElementById('username').textContent = user.username;
+    document.getElementById('email').textContent = user.email;
+    document.getElementById('memberSince').textContent = 'Jan 2024';
 }
 
 async function loadUserProgress() {

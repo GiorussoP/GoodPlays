@@ -5,6 +5,7 @@ from app import schemas
 from app.database import get_db
 from app.models import Review, User
 from app.routers.auth import get_current_user
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
@@ -31,7 +32,9 @@ def get_review(review_id: int,
 def get_game_reviews(game_id: int, 
                      db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_user)):
-    reviews = db.query(Review).filter(Review.game_id == game_id).all()
+    reviews = db.query(Review).options(
+        selectinload(Review.user)
+    ).filter(Review.game_id == game_id).all()
     return reviews
 
 @router.put("/{review_id}", response_model=schemas.ReviewResponse)
@@ -61,3 +64,8 @@ def delete_review(review_id: int,
     db.delete(db_review)
     db.commit()
     return {"message": "Review deleted successfully"}
+
+# Nova rota para obter o username do usuário atual
+@router.get("/users/me", response_model=schemas.UserResponse)
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return current_user

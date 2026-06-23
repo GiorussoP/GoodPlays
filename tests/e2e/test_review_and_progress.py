@@ -19,7 +19,8 @@ def test_write_review_and_update_progress(page):
 
     # Write a review
     page.click('#addReviewBtn')
-    page.wait_for_selector('#addReviewModal', timeout=5000)
+    # Changed from wait_for_selector to wait_for(state='visible')
+    page.wait_for('#addReviewModal', state='visible', timeout=5000)
     page.click('.rating-input .star[data-value="4"]')
     page.fill('#comment', 'Automated e2e review')
     page.click('#submitReviewBtn')
