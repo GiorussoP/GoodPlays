@@ -11,5 +11,9 @@ def test_read_root_integration():
     """
     response = client.get("/")
     
+    # Verifica se o status code é 200 (OK)
     assert response.status_code == 200
-    assert response.json() == {"message": "Bem-vindo ao GoodPlays API!"}
+    
+    # Verifica se o conteúdo retornado contém partes esperadas do HTML
+    assert "<title>GoodPlays</title>" in response.text
+    assert "Descubra e Compartilhe os Melhores Jogos" in response.text
