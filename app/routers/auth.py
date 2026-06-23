@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models import User
 
 # Configurações do JWT (Em produção, guarde a SECRET_KEY em um arquivo .env)
-SECRET_KEY = "sua_chave_super_secreta_aqui"
+SECRET_KEY = "uma_chave_super_secreta_muito_longa_de_32_chars!!"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

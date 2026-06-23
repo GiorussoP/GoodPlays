@@ -54,3 +54,4 @@ def test_read_user_success(client):
     assert data["id"] == user_id
     assert data["username"] == "victor"
     assert data["email"] == "victor@teste.com"
+    
