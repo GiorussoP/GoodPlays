@@ -35,6 +35,16 @@ def create_game(game: GameCreate,
     
     return new_game
 
+
+@router.get("/search/", response_model=list[GameResponse])
+def search_games(q: str, db: Session = Depends(get_db)):
+    """
+    Pesquisa jogos pelo título usando case-insensitive.
+    """
+    # O ilike permite buscas parciais, ex: "zelda" acha "The Legend of Zelda"
+    games = db.query(Game).filter(Game.title.ilike(f"%{q}%")).all()
+    return games
+
 @router.get("/", response_model=list[GameResponse])
 def read_games(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """

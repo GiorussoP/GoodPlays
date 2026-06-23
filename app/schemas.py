@@ -30,7 +30,7 @@ class GameResponse(GameBase):
     model_config = ConfigDict(from_attributes=True)
 
 class ProgressCreate(BaseModel):
-    user_id: int
+    user_id: Optional[int] = None
     game_id: int
     progress_percentage: int
     last_played_at: Optional[str] = None

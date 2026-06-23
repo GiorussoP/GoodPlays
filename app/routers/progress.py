@@ -15,6 +15,10 @@ async def create_progress(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new progress entry for a user and game."""
+    
+    # FORÇA O ID DO USUÁRIO LOGADO ANTES DE QUALQUER CHECAGEM
+    progress.user_id = current_user.id 
+
     existing_progress = db.query(Progress).filter(
         Progress.user_id == progress.user_id,
         Progress.game_id == progress.game_id
@@ -145,3 +149,12 @@ async def delete_progress(
         "message": "Progress deleted successfully.",
         "data": progress.id
     }
+
+@router.get("/me", response_model=list[schemas.ProgressResponse])
+async def get_my_progress(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retorna todos os progressos do usuário logado."""
+    progresses = db.query(Progress).filter(Progress.user_id == current_user.id).all()
+    return progresses

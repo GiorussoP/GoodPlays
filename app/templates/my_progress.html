@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>🎮 Meus Progressos</h2>
+        <p class="text-muted">Acompanhe aqui o seu status nos jogos que você está jogando.</p>
+    </div>
+</div>
+
+<div class="row" id="my-progress-list">
+    </div>
+
+<script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "/login";
+
+    async function loadMyProgress() {
+        // Busca os progressos e os jogos ao mesmo tempo
+        const [progressRes, gamesRes] = await Promise.all([
+            fetch("/progress/me", { headers: { "Authorization": `Bearer ${token}` } }),
+            fetch("/games/", { headers: { "Authorization": `Bearer ${token}` } })
+        ]);
+
+        if (progressRes.ok && gamesRes.ok) {
+            const myProgresses = await progressRes.json();
+            const allGames = await gamesRes.json();
+            const container = document.getElementById("my-progress-list");
+            container.innerHTML = "";
+
+            if (myProgresses.length === 0) {
+                container.innerHTML = "<p class='text-muted'>Você ainda não registrou progresso em nenhum jogo.</p>";
+                return;
+            }
+
+            myProgresses.forEach(prog => {
+                // Encontra os dados do jogo correspondente ao progresso
+                const game = allGames.find(g => g.id === prog.game_id);
+                if (!game) return;
+
+                // Formata a data (se existir)
+                let dateStr = "Não informada";
+                if (prog.last_played_at) {
+                    const parts = prog.last_played_at.split("-");
+                    if (parts.length === 3) {
+                        dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    }
+                }
+
+                container.innerHTML += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 shadow-sm border-success">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">${game.title}</h5>
+                                <h6 class="card-subtitle mb-3 text-muted">${game.developer || 'N/A'}</h6>
+
+                                <p class="mb-1 fw-bold">Progresso:</p>
+                                <div class="progress mb-3" style="height: 25px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${prog.progress_percentage}%;" aria-valuenow="${prog.progress_percentage}" aria-valuemin="0" aria-valuemax="100">${prog.progress_percentage}%</div>
+                                </div>
+
+                                <p class="card-text small text-muted">
+                                    Última vez jogado: <strong>${dateStr}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    // Executa ao carregar a página
+    loadMyProgress();
+</script>
+{% endblock %}
