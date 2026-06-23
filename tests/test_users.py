@@ -1,4 +1,6 @@
 import pytest
+from app.models import User
+from app.routers.auth import get_current_user
 
 # --- Testes de Unidade (Comportamentos isolados) ---
 
@@ -54,3 +56,23 @@ def test_read_user_success(client):
     assert data["id"] == user_id
     assert data["username"] == "victor"
     assert data["email"] == "victor@teste.com"
+
+def test_read_current_user_success(client): # Removido o 'app' daqui
+    # 1. Criamos um usuário fictício que simula o usuário logado
+    mock_user = User(id=1, username="test_me", email="me@teste.com")
+
+    # 2. Substituímos a dependência usando client.app
+    client.app.dependency_overrides[get_current_user] = lambda: mock_user
+
+    # 3. Fazemos a requisição para a rota /me
+    response = client.get("/users/me")
+
+    # 4. Limpamos os overrides no client.app para não afetar outros testes
+    client.app.dependency_overrides.clear()
+
+    # 5. Validações
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == 1
+    assert data["username"] == "test_me"
+    assert data["email"] == "me@teste.com"
