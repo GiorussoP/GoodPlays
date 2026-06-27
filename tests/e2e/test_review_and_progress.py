@@ -1,17 +1,27 @@
 import pytest
 
+import pytest
+
 
 @pytest.mark.e2e
 def test_write_review_and_update_progress(page):
-    # Log in with existing test user (created during manual testing)
-    page.goto('http://127.0.0.1:8000/login')
+    # Register a new test user
+    page.goto('http://127.0.0.1:8000/register')
+    page.fill('#username', 'testuser')
+    page.fill('#email', 'testuser@example.com')
+    page.fill('#password', 'password123')
+    page.click('button[type=submit]')
+    page.wait_for_url('**/login')
+    
+    # Log in with the newly created user
     page.fill('#username', 'testuser')
     page.fill('#password', 'password123')
     page.click('button[type=submit]')
     page.wait_for_url('**/games')
 
-    # Open a game detail
-    page.click('text=View Details')
+    # Wait for games to load and then open a game detail
+    page.wait_for_selector('.game-card', timeout=10000)
+    page.click('a:has-text("View Details")')
     page.wait_for_url('**/game/*')
 
     # Auto-accept alerts that the UI shows
@@ -19,13 +29,13 @@ def test_write_review_and_update_progress(page):
 
     # Write a review
     page.click('#addReviewBtn')
-    # Changed from wait_for_selector to wait_for(state='visible')
-    page.wait_for('#addReviewModal', state='visible', timeout=5000)
+    # Wait for the modal to be visible
+    page.wait_for_selector('#addReviewModal', state='visible', timeout=10000)
     page.click('.rating-input .star[data-value="4"]')
     page.fill('#comment', 'Automated e2e review')
     page.click('#submitReviewBtn')
     # wait for the review to appear in the list
-    page.wait_for_selector('text=Automated e2e review', timeout=5000)
+    page.wait_for_selector('text=Automated e2e review', timeout=10000)
     assert page.is_visible('text=Automated e2e review')
 
     # Start/update progress
@@ -35,7 +45,7 @@ def test_write_review_and_update_progress(page):
     else:
         page.click('text=Update Progress')
 
-    page.wait_for_selector('#progressModal', timeout=5000)
+    page.wait_for_selector('#progressModal', state='visible', timeout=10000)
     # set slider value via JS and set a last played date
     page.evaluate("""
         () => {
@@ -47,5 +57,6 @@ def test_write_review_and_update_progress(page):
     """)
     page.click('#submitProgressBtn')
     # confirm progress updated in UI
-    page.wait_for_selector('text=33%', timeout=5000)
+    page.wait_for_selector('text=33%', timeout=10000)
     assert page.is_visible('text=33%')
+

@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models import Review, User
 from app.routers.auth import get_current_user
 from sqlalchemy.orm import selectinload
+from datetime import datetime
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
@@ -13,7 +14,14 @@ router = APIRouter(prefix="/reviews", tags=["Reviews"])
 def create_review(review: schemas.ReviewCreate, 
                   db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
-    db_review = Review(**review.model_dump())
+    # Security Fix: Ignore user_id from payload and use the authenticated user's ID
+    db_review = Review(
+        user_id=current_user.id,
+        game_id=review.game_id,
+        rating=review.rating,
+        comment=review.comment,
+        created_at=datetime.now().isoformat()
+    )
     db.add(db_review)
     db.commit()
     db.refresh(db_review)
@@ -46,6 +54,10 @@ def update_review(review_id: int,
     if not db_review:
         raise HTTPException(status_code=404, detail="Review not found")
     
+    # Security Fix: Check ownership
+    if db_review.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this review")
+    
     for key, value in review.model_dump(exclude_unset=True).items():
         setattr(db_review, key, value)
     
@@ -60,6 +72,10 @@ def delete_review(review_id: int,
     db_review = db.query(Review).filter(Review.id == review_id).first()
     if not db_review:
         raise HTTPException(status_code=404, detail="Review not found")
+    
+    # Security Fix: Check ownership
+    if db_review.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this review")
     
     db.delete(db_review)
     db.commit()
