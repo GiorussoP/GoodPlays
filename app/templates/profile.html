@@ -143,13 +143,23 @@ async function loadUserProgress() {
 
 async function loadUserReviews() {
     try {
-        // We need to get all reviews and filter by current user
-        // For now, this would require a /my-reviews endpoint
-        document.getElementById('reviewsCount').textContent = '0';
-        document.getElementById('reviewsList').innerHTML = 
-            '<p class="text-muted">No reviews yet. <a href="/games">Write your first review!</a></p>';
+        const token = localStorage.getItem('access_token');
+        
+        const response = await fetch(`/reviews/user/${currentUserId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load reviews');
+        
+        allReviews = await response.json();
+        document.getElementById('reviewsCount').textContent = allReviews.length;
+        displayReviews();
     } catch (error) {
         console.error('Error loading reviews:', error);
+        document.getElementById('reviewsList').innerHTML = 
+            '<p class="text-muted">No reviews yet. <a href="/games">Write your first review!</a></p>';
     }
 }
 
@@ -175,6 +185,33 @@ function displayProgress() {
                     <div class="progress-bar" style="width: ${percentage}%"></div>
                 </div>
                 <small class="text-muted">Last played: ${progress.last_played_at || 'Never'}</small>
+            </div>
+        `;
+    }).join('');
+}
+
+function displayReviews() {
+    const container = document.getElementById('reviewsList');
+    
+    if (allReviews.length === 0) {
+        container.innerHTML = '<p class="text-muted">No reviews yet. <a href="/games">Write your first review!</a></p>';
+        return;
+    }
+    
+    container.innerHTML = allReviews.map(review => {
+        const gameTitle = review.game && review.game.title ? review.game.title : `Game ID: ${review.game_id}`;
+        const ratingStars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+        const comment = review.comment || 'No comment';
+        const createdAt = review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Unknown date';
+        
+        return `
+            <div class="mb-4 pb-4 border-bottom">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0">${escapeHtml(gameTitle)}</h6>
+                    <span class="text-warning">${ratingStars}</span>
+                </div>
+                <p class="mb-2">${escapeHtml(comment)}</p>
+                <small class="text-muted">Reviewed on ${createdAt}</small>
             </div>
         `;
     }).join('');

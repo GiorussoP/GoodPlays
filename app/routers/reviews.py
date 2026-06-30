@@ -80,3 +80,12 @@ def delete_review(review_id: int,
     db.delete(db_review)
     db.commit()
     return {"message": "Review deleted successfully"}
+
+@router.get("/user/{user_id}", response_model=List[schemas.ReviewResponse])
+def get_user_reviews(user_id: int, 
+                     db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    reviews = db.query(Review).options(
+        selectinload(Review.game)
+    ).filter(Review.user_id == user_id).all()
+    return reviews

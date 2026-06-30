@@ -87,5 +87,6 @@ class ReviewResponse(ReviewCreate):
     id: int
     created_at: Optional[str] = None
     user: Optional[UserInReview] = None
+    game: Optional[GameResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
