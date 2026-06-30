@@ -1,29 +1,39 @@
 import pytest
-
-import pytest
+import time
 
 
 @pytest.mark.e2e
 def test_write_review_and_update_progress(page):
+    # Use a unique username for each test run to avoid conflicts
+    timestamp = int(time.time())
+    username = f'testuser{timestamp}'
+    email = f'testuser{timestamp}@example.com'
+    
     # Register a new test user
     page.goto('http://127.0.0.1:8000/register')
-    page.fill('#username', 'testuser')
-    page.fill('#email', 'testuser@example.com')
+    page.fill('#username', username)
+    page.fill('#email', email)
     page.fill('#password', 'password123')
+    page.fill('#confirmPassword', 'password123')
     page.click('button[type=submit]')
-    page.wait_for_url('**/login')
+    # Wait for navigation to login page (with or without query parameters)
+    page.wait_for_url('**/login**', timeout=10000)
     
     # Log in with the newly created user
-    page.fill('#username', 'testuser')
+    page.fill('#username', username)
     page.fill('#password', 'password123')
     page.click('button[type=submit]')
-    page.wait_for_url('**/games')
+    page.wait_for_url('**/games', timeout=10000)
 
     # Wait for games to load and then open a game detail
     page.wait_for_selector('.game-card', timeout=10000)
     page.click('a:has-text("View Details")')
-    page.wait_for_url('**/game/*')
+    page.wait_for_url('**/game/*', timeout=10000)
 
+    # Wait for the page to fully load and JavaScript to initialize
+    # Wait for the add review button to be visible (this indicates JS initialization is complete)
+    page.wait_for_selector('#addReviewBtn', state='visible', timeout=10000)
+    
     # Auto-accept alerts that the UI shows
     page.on('dialog', lambda dialog: dialog.accept())
 
@@ -59,4 +69,3 @@ def test_write_review_and_update_progress(page):
     # confirm progress updated in UI
     page.wait_for_selector('text=33%', timeout=10000)
     assert page.is_visible('text=33%')
-

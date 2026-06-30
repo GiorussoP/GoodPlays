@@ -81,7 +81,7 @@ def test_get_review_not_found(auth_client):
     assert response.status_code == 404
     assert response.json()["detail"] == "Review not found"
 
-def test_create_review_without_login(client):
+def test_get_review_without_login(client):
     
     response = client.get("/reviews/9999")
     assert response.status_code == 401

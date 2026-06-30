@@ -80,8 +80,3 @@ def delete_review(review_id: int,
     db.delete(db_review)
     db.commit()
     return {"message": "Review deleted successfully"}
-
-# Nova rota para obter o username do usuário atual
-@router.get("/users/me", response_model=schemas.UserResponse)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
-    return current_user
