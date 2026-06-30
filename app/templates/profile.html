@@ -164,10 +164,11 @@ function displayProgress() {
     
     container.innerHTML = allProgress.map(progress => {
         const percentage = progress.progress_percentage || 0;
+        const gameTitle = progress.game && progress.game.title ? progress.game.title : `Game ID: ${progress.game_id}`;
         return `
             <div class="mb-3 pb-3 border-bottom">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <strong>Game ID: ${progress.game_id}</strong>
+                    <strong>${escapeHtml(gameTitle)}</strong>
                     <span class="badge bg-primary">${percentage}%</span>
                 </div>
                 <div class="progress">

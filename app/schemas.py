@@ -45,6 +45,7 @@ class ProgressResponse(BaseModel):
     game_id: int
     progress_percentage: int
     last_played_at: Optional[str] = None
+    game: Optional[GameResponse] = None  # Include game details
 
     model_config = ConfigDict(from_attributes=True)
 

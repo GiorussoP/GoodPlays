@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app import schemas, database
-from app.models import Progress, Review, User
+from app.models import Progress, Review, User, Game
 from app.database import get_db
 from app.routers.auth import get_current_user
 
@@ -69,15 +69,23 @@ async def get_user_progress(
     current_user: User = Depends(get_current_user)
 ):
     """Get all progress entries for a specific user."""
-    progress = db.query(Progress).filter(Progress.user_id == user_id).all()
+    progress_entries = db.query(Progress).filter(Progress.user_id == user_id).all()
     
-    if not progress:
+    if not progress_entries:
         raise HTTPException(
             status_code=404, 
             detail="No progress found for this user."  
         )
     
-    return progress
+    # Enhance each progress entry with game details
+    result = []
+    for entry in progress_entries:
+        game = db.query(Game).filter(Game.id == entry.game_id).first()
+        progress_dict = entry.__dict__.copy()
+        progress_dict["game"] = game
+        result.append(progress_dict)
+    
+    return result
 
 @router.get("/by-game/{game_id}", response_model=List[schemas.ProgressResponse])
 async def get_game_progress(
